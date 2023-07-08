@@ -17,6 +17,7 @@ async def start_handler(message: types.Message):
 async def echo_answer(message: types.Message):
     await message.answer(message.text)
 
+#Отправка фото:
 @dp.message_handler(commands=['catphoto'])
 async def photo_of_cat(message: types.Message):
     with open('cat.jpg', 'rb') as f:
