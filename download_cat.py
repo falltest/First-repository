@@ -9,10 +9,6 @@ async def download(session: aiohttp.ClientSession,
     response = await session.get(url)
     response_bytes = await response.read()
 
-    file = open(f'cats/cat{n}.jpg', 'wb') # write bytes
-    file.write(response_bytes)
-    file.close()
-
     with open(f'cats/cat{n}.jpg', 'wb') as file:
         file.write(response_bytes)
 
