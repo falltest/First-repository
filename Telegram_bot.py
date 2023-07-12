@@ -16,6 +16,8 @@ notes_buttons = []
 name_of_new_note = ''
 main_menu = {'text': 'Что вам нужно в данный момент?', 'reply_markup': keyboard_markup}
 menu_of_notes = {'text': '', 'reply_markup': ''}
+last_name = ''
+last_content = ''
 
 
 @dp.message_handler(commands='start',state='*')
@@ -54,7 +56,7 @@ async def about_bot_message(call: types.CallbackQuery, state: FSMContext):
 async def about_bot_message(call: types.CallbackQuery, state: FSMContext):
     """Принимает команду создания новой заметки"""
     global d
-    await call.answer('Напиши название будующей заметки...', True)
+    await call.message.answer('Напиши название будующей заметки...')
     await state.set_state('name_of_new_note')
 
 @dp.message_handler(state='name_of_new_note')
@@ -66,6 +68,8 @@ async def about_bot_message(message: types.Message, state: FSMContext):
     global notes_buttons
     name_of_new_note = message.text
     new_button = InlineKeyboardButton(name_of_new_note, callback_data='change_note')
+    global last_name
+    last_name = name_of_new_note
     notes_buttons.append(new_button)
     await state.set_state('value_of_new_note')
     await message.answer('Что хочешь записать в заметку?')
@@ -74,7 +78,9 @@ async def about_bot_message(message: types.Message, state: FSMContext):
 async def about_bot_message(message: types.Message, state: FSMContext):
     """Записывает заметку"""
     global d
+    global last_content
     d[name_of_new_note] = message.text
+    last_content = message.text
     await message.answer('Заметка записана!')
     await message.answer(**main_menu)
 
@@ -83,12 +89,12 @@ async def about_bot_message(call: types.CallbackQuery, state: FSMContext):
     """Возможные действия с существующей заметкой"""
     global d
     await call.message.edit_text('Вы хотите...', reply_markup=change_keyboard)
-
 @dp.callback_query_handler(lambda c: c.data == 'change_name', state = '*')
 async def about_bot_message(call: types.CallbackQuery, state: FSMContext):
     """Меняет имя заметки"""
     global d
-    print(call.get_current())
+    await call.message.answer('Введите новое имя:')
+    await call.answer(1)
 
 '''
 @dp.message_handler()
@@ -105,5 +111,5 @@ async def about_bot_message(call: types.CallbackQuery):
 '''
 
 
-if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+
+executor.start_polling(dp, skip_updates=True)
