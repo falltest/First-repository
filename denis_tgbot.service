@@ -1,0 +1,14 @@
+
+[Unit]
+Description=Telegram Bot
+After=network.target
+
+[Service]
+User=test_user
+Group=test_user
+WorkingDirectory=/home/denis/First-repository/
+Environment="PYTHONPATH=/home/denis/First-repository/"
+ExecStart=/home/denis/First-repository/.venv/bin/python /home/denis/First-repository/Telegram_bot.py
+
+[Install]
+WantedBy=multi-user.target
