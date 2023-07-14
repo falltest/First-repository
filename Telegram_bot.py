@@ -40,7 +40,7 @@ async def buttons_message(message: types.Message, state: FSMContext):
 
 @dp.callback_query_handler(lambda c: c.data == 'translator', state = '*')
 async def about_bot_message(call: types.CallbackQuery, state: FSMContext):
-    await call.message.answer('Введите текст для перевода...')
+    await call.message.answer('Введите текст для перевода на одном из пяти языков:\nФранцузский\nКитайский\nНемецкий\nРусский\nАнглийский')
     await state.set_state('perevod_text')
 
 
