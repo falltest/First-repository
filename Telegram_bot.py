@@ -9,6 +9,8 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from config import TOKEN
 from keyboards import *
+import requests
+import urllib.request
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
 d = {}
@@ -18,18 +20,37 @@ main_menu = {'text': 'Что вам нужно в данный момент?', '
 menu_of_notes = {'text': '', 'reply_markup': ''}
 last_content = ''
 last_name = ''
-
+count_of_cats = 0
 
 
 @dp.message_handler(commands='start',state='*')
 async def start_handler(message: types.Message, state: FSMContext):
+    '''Запрашивает имя пользователя'''
     await message.reply("Напишите ваше имя...")
     await state.set_state('buttons')
+
+@dp.message_handler(commands='catphoto',state='*')
+async def start_handler(message: types.Message, state: FSMContext):
+    '''Отправляет рандомного котенка'''
+    global count_of_cats
+    count_of_cats += 1
+    url = 'https://api.thecatapi.com/v1/images/search?limit=10'
+    response = requests.get(url).json()
+    url_cat = ''
+    for data in response:
+        url_cat = data['url']
+    file = open(f'cat.jpg', 'wb') # write bytes
+    file.write(
+        requests.get(url_cat).content
+        )
+    file.close()
+    id_user = message.from_user.id
+    await bot.send_photo(chat_id = id_user, photo=open('cat.jpg', 'rb'))
 
 #result = translator.translate('hello world', src='en', dest='ru')
 @dp.message_handler(state='buttons')
 async def buttons_message(message: types.Message, state: FSMContext):
-    """Выдает список возможных действий: Заметки, библиотека ссылок"""
+    """Выдает список возможных действий: Заметки, библиотека ссылок и переводчик"""
     global name
     name = message.text
     await state.update_data({'name' : name})
@@ -40,6 +61,7 @@ async def buttons_message(message: types.Message, state: FSMContext):
 
 @dp.callback_query_handler(lambda c: c.data == 'translator', state = '*')
 async def about_bot_message(call: types.CallbackQuery, state: FSMContext):
+    """Принимает текст для перевода"""
     await call.message.answer('Введите текст для перевода на одном из пяти языков:\nФранцузский\nКитайский\nНемецкий\nРусский\nАнглийский')
     await state.set_state('perevod_text')
 
@@ -47,14 +69,22 @@ async def about_bot_message(call: types.CallbackQuery, state: FSMContext):
 text = ''
 @dp.message_handler(state='perevod_text')
 async def buttons_message(message: types.Message, state: FSMContext):
+    """Предлагает пользователю перевести текст на один из пяти языков"""
     global text
+    global count_of_cats
     text = message.text
-    await message.answer('На какой язык вы хотите перевести текст?', reply_markup = languages)
-    await state.set_state('perevod')
+    if message.text.lower() == 'i love cats' and count_of_cats == 7:
+        id_user = message.from_user.id
+        await message.answer('ВЫ НАШЛИ ПАСХАЛКУ ЧТОООО!!!!!!')
+        await message.answer(**main_menu)
+    else:
+        await message.answer('На какой язык вы хотите перевести текст?', reply_markup = languages)
+        await state.set_state('perevod')
 
 
 @dp.message_handler(state='perevod')
 async def buttons_message(message: types.Message, state: FSMContext):
+    """Переводит текст"""
     global text
     d = {'Русский': 'ru', 'Французский': 'fr', 'Немецкий': 'de', 'Китайский': 'zh-cn', 'Английский': 'en'}
     if message.text in d:
@@ -69,11 +99,13 @@ async def buttons_message(message: types.Message, state: FSMContext):
 
 @dp.callback_query_handler(lambda c: c.data == 'link_library', state = '*')
 async def about_bot_message(call: types.CallbackQuery, state: FSMContext):
+    """Запрашивает задачу для которой пользователь ищет материалы"""
     await call.message.answer('Для какой задачи вы ищете материал?', reply_markup = material)
     await state.set_state('Zad')
 
 @dp.message_handler(state='Zad')
 async def start_handler(message: types.Message, state: FSMContext):
+    """Ссылки"""
     if message.text == 'Я пишу сочинение, эссе, письменную работу':
         await message.answer('[Брифли](https://briefly.ru/) - сайт поможет вам узнать содержание любой книги, потратив на это минимум времени\n[Образовака](https://obrazovaka.ru/books) - очень схож с брифли\n[Википедия](https://ru.wikipedia.org/wiki/%D0%97%D0%B0%D0%B3%D0%BB%D0%B0%D0%B2%D0%BD%D0%B0%D1%8F_%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0) - это вы и сами знаете что такое\n[Таймер](https://www.timeanddate.com/timer/) который поможет вам уложиться вовремя\n[Ruscorpora](https://ruscorpora.ru/search) - Ресурс, который поможет вам проверить допустимость использования разных слов вместе\n[Грамота.ру](http://gramota.ru/) - Проверит слова на правильность написания', parse_mode='Markdown')
     elif message.text == 'Я хочу перевести текст':
@@ -84,7 +116,7 @@ async def start_handler(message: types.Message, state: FSMContext):
         await message.answer('[Этогочеловеканесуществует](https://www.sravni.ru/goto.ashx?type=ExternalLink&out=https%3A%2F%2Fthispersondoesnotexist.com%2F) - сайт генерирует изображения не сущеcтсвующих людей\n[Радиоооо](https://www.sravni.ru/goto.ashx?type=ExternalLink&out=https%3A%2F%2Fradiooooo.com%2F) - здесь собрана музыка, которую в разное время крутили на радио в разных странах.\n[Геогеср](https://www.sravni.ru/goto.ashx?type=ExternalLink&out=https%3A%2F%2Fwww.geoguessr.com%2F) - ваша задача угадать где находитесь.\n[Драйв & лисен](https://www.sravni.ru/goto.ashx?type=ExternalLink&out=http%3A%2F%2Fdriveandlisten.herokuapp.com%2F) - сайт позволяет кататься на машине в другом городе и случать радио.', parse_mode='Markdown')
 @dp.callback_query_handler(lambda c: c.data == 'notes', state = '*')
 async def about_bot_message(call: types.CallbackQuery, state: FSMContext):
-    """Выдает список заметок, чтобы изменить"""
+    """Выдает список заметок, чтобы прочитать, удалить или вернуться назад"""
     global d
     global notes_buttons
     global menu_of_notes
@@ -100,7 +132,6 @@ async def about_bot_message(call: types.CallbackQuery, state: FSMContext):
         notes_keyboard = InlineKeyboardMarkup()
         for i in notes_buttons:
             notes_keyboard.row(i)
-    #await call.answer('Как вы хотите назвать журнал заметок?', True)
     await call.message.edit_text('Вот список заметок:', reply_markup=notes_keyboard)
 
 
@@ -115,12 +146,16 @@ async def about_bot_message(call: types.CallbackQuery, state: FSMContext):
         await call.message.answer('Напиши название будующей заметки...')
         await state.set_state('name_of_new_note')
 
+
 @dp.callback_query_handler(lambda c: c.data == 'back', state = '*')
 async def about_bot_message(call: types.CallbackQuery, state: FSMContext):
+    """Кнопка back"""
     await call.message.answer(**main_menu)
+
 
 @dp.callback_query_handler(lambda c: c.data == 'delete_note', state = '*')
 async def about_bot_message(call: types.CallbackQuery, state: FSMContext):
+    """Кнопка delete_note"""
     await call.message.answer('Напишите название заметки, которую хотите удалить...')
     await state.set_state('delete_note')
 
@@ -172,16 +207,6 @@ async def about_bot_message(message: types.Message, state: FSMContext):
     await message.answer('Заметка записана!')
     await message.answer(**main_menu)
 
-
-@dp.message_handler(state='new_name')
-async def about_bot_message(message: types.Message, state: FSMContext):
-    """Меняет имя заметки"""
-    new_name = message.text
-    global ind
-    global notes_buttons
-    notes_buttons[ind].values['text'] = new_name
-    await message.answer('Готово!')
-    await message.answer(**main_menu)
 
 '''
 @dp.message_handler()

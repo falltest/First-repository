@@ -46,5 +46,4 @@ async def main():
     response.release()
 
 
-def sync_main():
-    asyncio.run(main())
+asyncio.run(main())

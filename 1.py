@@ -1,23 +1,17 @@
 import requests
-from decorators import time_measure_decorator
 
-url = 'https://api.thecatapi.com/v1/images/search?limit=10'
+    url = 'https://api.thecatapi.com/v1/images/search?limit=10'
 
-@time_measure_decorator
-def main():
-    """Скачивает 10 котиков с TheCatApi"""
+
     response = requests.get(url).json()
 
-    url_cats = []
+    url_cat = ''
     for data in response:
-        url_cats.append(data['url'])
+        url_cat = data['url']
 
-    for i in range(10):
-        file = open(f'cats/cat{i}.jpg', 'wb') # write bytes
-        file.write(
-            requests.get(url_cats[i]).content
-            )
-        file.close()
-        
-if __name__ == "__main__":
-    main()
+    file = open(f'cat.jpg', 'wb') # write bytes
+    file.write(
+        requests.get(url_cat).content
+        )
+    file.close()
+            
